@@ -32,13 +32,20 @@ for index, row in df.iterrows():
     query_params = {
         "city": preferred_locations,
         "unittype": type_of_units,
-        "availability": "Available",
+        "available": "Available",
         "income": income,
         "rent-max": rent
     }
     
     # Make GET request and parse JSON
-    apartments = get_apartments("&".join([f"{k}={'+'.join(v.split())}" for k, v in query_params.items() if not (isinstance(v, int) or isinstance(v, float))]))
+# Make GET request and parse JSON
+    response = requests.get(base_url, params=query_params)
+    try:
+        response.raise_for_status()
+        apartments = response.json()
+    except requests.exceptions.HTTPError as err:
+        print("Error fetching data:", err)
+        raise SystemExit(err)
     
     # Output apartments data to a JSON file
     if apartments:
