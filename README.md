@@ -7,14 +7,14 @@ The below assumes the existence of a Google Cloud project.
 ### Create a Google Cloud service account
 1. Go to Cloud Console [Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts).
 1. Create a new service account with no roles.
-1. Clicking on the new service account on the [Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)] page and go to the Keys tab.
+1. Clicking on the new service account on the [Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts) page and go to the Keys tab.
 1. Add a new JSON key by selecting **Add key > Create new key** and choose the JSON option.
 1. Save the key in a secure location.
 
 ### Enable Google Drive API
-1. Go to the [Google Drive API](https://console.developers.google.com/apis/api/drive.googleapis.com/overview) on the APIs & Services page of your Google Cloud project
-1. Click on Enable API
+1. Go to the [Google Drive API](https://console.developers.google.com/apis/api/drive.googleapis.com/overview) on the APIs & Services page of your Google Cloud project.
+1. Click on Enable API.
 
 ### Share search parameters spreadsheet with the service account
-1. Find the spreadsheet containing housing search parameters on Google Drive
+1. Find the spreadsheet containing housing search parameters on Google Drive.
 1. Using the Drive UI, share the spreadsheet with the email address associated with the new service account.  It will likely be of the form `{ID}@{PROJECT}.iam.gserviceaccount.com`.  Provide **view-only** access to this email address.
