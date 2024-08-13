@@ -21,7 +21,7 @@ load_dotenv()
 
 # Google Drive API setup
 scope = ['https://www.googleapis.com/auth/drive']
-service_account_json_key = os.environ[SERVICE_ACCOUNT_CREDENTIAL_FILE]
+service_account_json_key = os.environ['SERVICE_ACCOUNT_CREDENTIAL_FILE']
 credentials = service_account.Credentials.from_service_account_file(
     filename=service_account_json_key,
     scopes=scope
