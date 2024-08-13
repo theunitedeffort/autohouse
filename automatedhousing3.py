@@ -29,18 +29,9 @@ credentials = service_account.Credentials.from_service_account_file(
 service = build('drive', 'v3', credentials=credentials)
 
 print("c")
-request_file = service.files().export_media(fileId="1eRDtHWCFHYPDJQv_QCeqGUmPQJsdv-aQAnGfK8LnMfU", mimeType='text/csv')
-file = io.BytesIO()
-downloader = MediaIoBaseDownload(file, request_file)
-done = False
-while done is False:
-  status, done = downloader.next_chunk()
-  print(f'Download {int(status.progress() * 100)}%.')
-
-print("d")
-file.seek(0)  # Reset the file pointer to the beginning
-with open(f"downloaded_file.csv", 'wb') as df:
-    df.write(file.read())
+request_file = service.files().export_media(fileId="1eRDtHWCFHYPDJQv_QCeqGUmPQJsdv-aQAnGfK8LnMfU", mimeType='text/csv').execute()
+with open(f"downloaded_file.csv", 'wb') as f:
+  f.write(request_file)
 print("e")
 
 # Load the downloaded file into a DataFrame
