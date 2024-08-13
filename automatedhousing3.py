@@ -23,39 +23,6 @@ credentials = service_account.Credentials.from_service_account_file(
 )
 service = build('drive', 'v3', credentials=credentials)
 
-# Call the Drive v3 API
-results = service.files().list(pageSize=1000, fields="nextPageToken, files(id, name, mimeType, size, modifiedTime)", q='name contains "de"').execute()
-items = results.get('files', [])
-data = []
-
-for row in items:
-    if row["mimeType"] != "application/vnd.google-apps.folder":
-        row_data = []
-        try:
-            row_data.append(round(int(row["size"])/1000000, 2))
-        except KeyError:
-            row_data.append(0.00)
-        row_data.append(row["id"])
-        row_data.append(row["name"])
-        row_data.append(row["modifiedTime"])
-        row_data.append(row["mimeType"])
-        data.append(row_data)
-
-cleared_df = pd.DataFrame(data, columns=['size_in_MB', 'id', 'name', 'last_modification', 'type_of_file'])
-
-# File export and download
-new_permission = {
-    'type': 'user',
-    'role': 'writer',
-    'emailAddress': 'ijw91021@gmail.com',
-}
-try:
-    print("a")
-    service.permissions().create(fileId='1WrQ1eRIoUWmIPQEacyl_s-P7pbtuRbicFufVNnsLmCY', body=new_permission, transferOwnership=False).execute()
-    print("b")
-except (AttributeError, HttpError) as error:
-    print(f'An error occurred: {error}')
-
 print("c")
 request_file = service.files().export_media(fileId="1WrQ1eRIoUWmIPQEacyl_s-P7pbtuRbicFufVNnsLmCY", mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 file = io.BytesIO()
