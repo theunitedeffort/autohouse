@@ -6,6 +6,9 @@ Created on Mon Jul  1 21:54:55 2024
 @author: isaacwang
 """
 
+import os
+
+from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
@@ -14,9 +17,11 @@ from googleapiclient.errors import HttpError
 import pandas as pd
 import yaml
 
+load_dotenv()
+
 # Google Drive API setup
 scope = ['https://www.googleapis.com/auth/drive']
-service_account_json_key = 'credentials.json'
+service_account_json_key = os.environ[SERVICE_ACCOUNT_CREDENTIAL_FILE]
 credentials = service_account.Credentials.from_service_account_file(
     filename=service_account_json_key,
     scopes=scope
