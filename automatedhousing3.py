@@ -28,11 +28,9 @@ credentials = service_account.Credentials.from_service_account_file(
 )
 service = build('drive', 'v3', credentials=credentials)
 
-print("c")
 request_file = service.files().export_media(fileId="1eRDtHWCFHYPDJQv_QCeqGUmPQJsdv-aQAnGfK8LnMfU", mimeType='text/csv').execute()
 with open(f"downloaded_file.csv", 'wb') as f:
   f.write(request_file)
-print("e")
 
 # Load the downloaded file into a DataFrame
 df = pd.read_csv("downloaded_file.csv")
