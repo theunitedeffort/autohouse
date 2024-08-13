@@ -29,22 +29,22 @@ credentials = service_account.Credentials.from_service_account_file(
 service = build('drive', 'v3', credentials=credentials)
 
 print("c")
-request_file = service.files().export_media(fileId="1WrQ1eRIoUWmIPQEacyl_s-P7pbtuRbicFufVNnsLmCY", mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+request_file = service.files().export_media(fileId="1eRDtHWCFHYPDJQv_QCeqGUmPQJsdv-aQAnGfK8LnMfU", mimeType='text/csv')
 file = io.BytesIO()
 downloader = MediaIoBaseDownload(file, request_file)
 done = False
 while done is False:
-    status, done = downloader.next_chunk()
-    print(f'Download {int(status.progress() * 100)}%.')
+  status, done = downloader.next_chunk()
+  print(f'Download {int(status.progress() * 100)}%.')
 
 print("d")
 file.seek(0)  # Reset the file pointer to the beginning
-with open(f"downloaded_file.xlsx", 'wb') as df:
+with open(f"downloaded_file.csv", 'wb') as df:
     df.write(file.read())
 print("e")
 
 # Load the downloaded file into a DataFrame
-df = pd.read_excel("downloaded_file.xlsx")
+df = pd.read_csv("downloaded_file.csv")
 
 # Base URL for the housing data
 base_url = "https://www.theunitedeffort.org/housing/affordable-housing/filter?"
