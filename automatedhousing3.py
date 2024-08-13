@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import io
 import os
 
 from dotenv import load_dotenv
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-import io
 from googleapiclient.errors import HttpError
 import pandas as pd
 import yaml
@@ -23,12 +23,10 @@ credentials = service_account.Credentials.from_service_account_file(
 )
 service = build('drive', 'v3', credentials=credentials)
 
-request_file = service.files().export_media(fileId="1eRDtHWCFHYPDJQv_QCeqGUmPQJsdv-aQAnGfK8LnMfU", mimeType='text/csv').execute()
-with open(f"downloaded_file.csv", 'wb') as f:
-  f.write(request_file)
-
-# Load the downloaded file into a DataFrame
-df = pd.read_csv("downloaded_file.csv")
+csv_bytes = service.files().export_media(fileId="1eRDtHWCFHYPDJQv_QCeqGUmPQJsdv-aQAnGfK8LnMfU", mimeType='text/csv').execute()
+# The loaded CSV should always be relatively small (~100 lines) so we can just
+# load it into pandas directly from memory.
+df = pd.read_csv(io.BytesIO(csv_bytes))
 
 # Base URL for the housing data
 base_url = "https://www.theunitedeffort.org/housing/affordable-housing/filter?"
