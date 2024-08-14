@@ -3,6 +3,7 @@
 
 import io
 import os
+import re
 
 from dotenv import load_dotenv
 from google.oauth2 import service_account
@@ -10,6 +11,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 from googleapiclient.errors import HttpError
 import pandas as pd
+import requests
 import yaml
 
 load_dotenv()
@@ -29,50 +31,61 @@ csv_bytes = service.files().export_media(fileId="1eRDtHWCFHYPDJQv_QCeqGUmPQJsdv-
 df = pd.read_csv(io.BytesIO(csv_bytes))
 
 # Base URL for the housing data
-base_url = "https://www.theunitedeffort.org/housing/affordable-housing/filter?"
+base_url = "https://www.theunitedeffort.org/data/housing/affordable-housing/filter"
 
 # Function to create URLs based on client data
 def generate_urls(df):
-    urls = []
-    for _, row in df.iterrows():
-        client_name = row['Client ID']
+  urls = []
+  for _, row in df.iterrows():
+    print(f'Processing row: {row.to_dict()}')
+    if 'Affordable Housing' not in row['Housing Options']:
+      print('Affordable housing not specified as a housing option. Skipping.')
+      continue
+    client_id = row['Record ID']
+    params = {}
 
-        # Use default values if certain fields are missing
-        preferred_locations = row['Location Preferences'] if pd.notnull(row['Location Preferences']) else "Unknown"
-        type_of_units = row['Housing Options'] if pd.notnull(row['Housing Options']) else "Unknown"
-        rent = row['Monthly Rent Budget'] if pd.notnull(row['Monthly Rent Budget']) else "Unknown"
-        age = row['Age'] if pd.notnull(row['Age']) else "Unknown"
+    params['availability'] = ['Available', 'Waitlist Open']
 
-        # Combine multiple locations
-        if preferred_locations != "Unknown":
-            locations = preferred_locations.split(",")  # Assuming the locations are comma-separated
-            location_query = "&".join([f"city={location.strip().replace(' ', '+')}" for location in locations])
-        else:
-            location_query = "city=Unknown"
+    params['city'] = row['Location Preferences'].split('|')
 
-        # Construct the URL with additional default values for other parameters
-        query_params = [
-            location_query,
-            f"unitType={type_of_units}",
-            "availability=Available",
-            "populationsServed=Unknown",  # You can change this as needed
-            f"rentMax={rent}",
-            "includeUnknownRent=on",
-            "income=Unknown",  # You can change this as needed
-            "includeUnknownIncome=on",
-            "propertyName="
-        ]
-        query_str = "&".join(query_params)
-        url = base_url + query_str
-        urls.append({"client_name": client_name, "url": url})
+    print(f'Raw rent string: {row['Monthly Rent Budget']}')
+    # Blow away dates in case the year is interpreted as a rent value
+    rent_max = re.sub(r'(\d{4}|\d{1,2})[/\-]\d{1,2}[/\-](\d{4}|\d{1,2})',
+      '[date]', row['Monthly Rent Budget'])
+    # Numbers may be written as e.g. "1K" so replace that with "1,000"
+    rent_max = re.sub(r'(\d)K', r'\1,000', rent_max)
+    # Get 3 or 4 digit numbers and strip out any comma separators
+    rent_matches = [int(m.replace(',', '')) for m in re.findall(r'\d?,?\d{3,4}', rent_max)]
+    if rent_matches:
+      params['rentMax'] = max(rent_matches)
+      print(f'parsed max rent: {params['rentMax']}')
+    else:
+      print('no max rent found')
+    params['includeUnknownRent'] = 'on'
 
-    return urls
+    # TODO: Perhaps include veterans and disabled here by default until
+    # we collect that information in our search preferences.
+    params['populationsServed'] = ['General Population']
+    if row['Age']:
+      age = None
+      try:
+       age = int(row['Age'])
+      except ValueError:
+        pass
+      if age and age > 55:
+        params['populationsServed'].append('Seniors')
+
+    print(f'final query parameters: {params}\n')
+    req = requests.PreparedRequest()
+    req.prepare_url(base_url, params)
+    urls.append({'client_id': client_id, 'url': req.url})
+  return urls
 
 # Generate URLs and save to a YAML file
 urls = generate_urls(df)
 
 with open('urls.yaml', 'w') as file:
-    yaml.dump(urls, file, default_flow_style=False)
+  yaml.dump(urls, file, default_flow_style=False)
 
 # You can now run urlwatch with the generated urls.yaml file
 # os.system('urlwatch --urls urls.yaml --config config.yaml')
