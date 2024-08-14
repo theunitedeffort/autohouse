@@ -28,21 +28,32 @@ service = build('drive', 'v3', credentials=credentials)
 csv_bytes = service.files().export_media(fileId="1eRDtHWCFHYPDJQv_QCeqGUmPQJsdv-aQAnGfK8LnMfU", mimeType='text/csv').execute()
 # The loaded CSV should always be relatively small (~100 lines) so we can just
 # load it into pandas directly from memory.
-df = pd.read_csv(io.BytesIO(csv_bytes))
+df = pd.read_csv(io.BytesIO(csv_bytes), keep_default_na=False)
 
 # Base URL for the housing data
-base_url = "https://www.theunitedeffort.org/data/housing/affordable-housing/filter"
+# Include client ID in case there are two clients with exactly the same search
+# params--outputted URLs must be unique for urlwatch.
+base_url = 'https://www.theunitedeffort.org/data/housing/affordable-housing/filter'
 
 # Function to create URLs based on client data
 def generate_urls(df):
   urls = []
+  processed_ids = []
   for _, row in df.iterrows():
-    print(f'Processing row: {row.to_dict()}')
+    print(f'\nProcessing row: {row.to_dict()}')
     if 'Affordable Housing' not in row['Housing Options']:
       print('Affordable housing not specified as a housing option. Skipping.')
       continue
-    # TODO: handle duplicate entries for a client ID
+    # There is nothing to prevent duplicate housing plans in our client
+    # management system, so just grab the first one here until there is
+    # a better way to choose a 'best' one from a set of entries.
     client_id = row['Record ID']
+    if client_id in processed_ids:
+      print('Client already processed. Skipping duplicate entry.')
+      continue
+    processed_ids.append(client_id)
+
+    url = f'{base_url}#{client_id}'
     params = {}
 
     params['availability'] = ['Available', 'Waitlist Open']
@@ -85,17 +96,17 @@ def generate_urls(df):
       if age and age <= 18:
         params['populationsServed'].append('Youth')
 
-    print(f'final query parameters: {params}\n')
+    print(f'final query parameters: {params}')
     req = requests.PreparedRequest()
-    req.prepare_url(base_url, params)
-    urls.append({'client_id': client_id, 'url': req.url})
+    req.prepare_url(url, params)
+    urls.append({'name': f'Client ID: {client_id}', 'url': req.url})
   return urls
 
 # Generate URLs and save to a YAML file
 urls = generate_urls(df)
 
 with open('urls.yaml', 'w') as file:
-  yaml.dump(urls, file, default_flow_style=False)
+  yaml.dump_all(urls, file)
 
 # You can now run urlwatch with the generated urls.yaml file
 # os.system('urlwatch --urls urls.yaml --config config.yaml')
