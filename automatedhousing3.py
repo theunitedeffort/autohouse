@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import io
+import logging
 import os
 import re
 
@@ -15,6 +16,8 @@ import requests
 import yaml
 
 load_dotenv()
+logger = logging.getLogger(__name__)
+logging.basicConfig(encoding='utf-8', level=logging.DEBUG)
 
 # Google Drive API setup
 scope = ['https://www.googleapis.com/auth/drive']
@@ -40,16 +43,16 @@ def generate_urls(df):
   urls = []
   processed_ids = []
   for _, row in df.iterrows():
-    print(f'\nProcessing row: {row.to_dict()}')
+    logger.info(f'\nProcessing row: {row.to_dict()}')
     if 'Affordable Housing' not in row['Housing Options']:
-      print('Affordable housing not specified as a housing option. Skipping.')
+      logger.info('Affordable housing not specified as a housing option. Skipping.')
       continue
     # There is nothing to prevent duplicate housing plans in our client
     # management system, so just grab the first one here until there is
     # a better way to choose a 'best' one from a set of entries.
     client_id = row['Record ID']
     if client_id in processed_ids:
-      print('Client already processed. Skipping duplicate entry.')
+      logger.warn(f'Client {client_id} already processed. Skipping duplicate entry.')
       continue
     processed_ids.append(client_id)
 
@@ -60,7 +63,7 @@ def generate_urls(df):
 
     params['city'] = row['Location Preferences'].split('|')
 
-    print(f'Raw rent string: {row['Monthly Rent Budget']}')
+    logger.debug(f'Raw rent string: {row['Monthly Rent Budget']}')
     # Blow away dates in case the year is interpreted as a rent value
     rent_max = re.sub(r'(\d{4}|\d{1,2})[/\-]\d{1,2}[/\-](\d{4}|\d{1,2})',
       '[date]', row['Monthly Rent Budget'])
@@ -70,9 +73,9 @@ def generate_urls(df):
     rent_matches = [int(m.replace(',', '')) for m in re.findall(r'\d?,?\d{3,4}', rent_max)]
     if rent_matches:
       params['rentMax'] = max(rent_matches)
-      print(f'parsed max rent: {params['rentMax']}')
+      logger.debug(f'parsed max rent: {params['rentMax']}')
     else:
-      print('no max rent found')
+      logger.debug('no max rent found')
     params['includeUnknownRent'] = 'on'
 
     # Since we only record age in our housing preferences, include all
@@ -96,7 +99,7 @@ def generate_urls(df):
       if age and age <= 18:
         params['populationsServed'].append('Youth')
 
-    print(f'final query parameters: {params}')
+    logger.info(f'final query parameters: {params}')
     req = requests.PreparedRequest()
     req.prepare_url(url, params)
     urls.append({'name': f'Client ID: {client_id}', 'url': req.url})
