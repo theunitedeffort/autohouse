@@ -41,6 +41,7 @@ def generate_urls(df):
     if 'Affordable Housing' not in row['Housing Options']:
       print('Affordable housing not specified as a housing option. Skipping.')
       continue
+    # TODO: handle duplicate entries for a client ID
     client_id = row['Record ID']
     params = {}
 
@@ -63,17 +64,26 @@ def generate_urls(df):
       print('no max rent found')
     params['includeUnknownRent'] = 'on'
 
-    # TODO: Perhaps include veterans and disabled here by default until
-    # we collect that information in our search preferences.
-    params['populationsServed'] = ['General Population']
+    # Since we only record age in our housing preferences, include all
+    # other populations by default and only add in Senior or Youth when
+    # relevant.  If we start recording disability or veteran status in
+    # housing preferences, then those can instead be conditionally added.
+    params['populationsServed'] = [
+      'General Population',
+      'Developmentally Disabled',
+      'Physically Disabled',
+      'Veterans'
+    ]
     if row['Age']:
       age = None
       try:
        age = int(row['Age'])
       except ValueError:
         pass
-      if age and age > 55:
+      if age and age >= 55:
         params['populationsServed'].append('Seniors')
+      if age and age <= 18:
+        params['populationsServed'].append('Youth')
 
     print(f'final query parameters: {params}\n')
     req = requests.PreparedRequest()
