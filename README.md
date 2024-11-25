@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This repository has been archived. The `autohouse` functionality was moved into the [ueo-watch](https://github.com/theunitedeffort/ueo-watch) repository.
+
 # autohouse
 Tool to automatically search for housing on theunitedeffort.org.  Autohouse will search for properties matching a given set of search parameters.  These search parameters are stored on Google Drive in a Google Sheet.
 
